@@ -18,7 +18,7 @@
         }
 
         if (watchedAttr.includes(obj.get("name"))){
-            attr = obj.get("name");
+            attr = obj.get("name").replace('ammo_', '');
         } else {
             return;
         }
@@ -143,13 +143,213 @@
     }
 
     /**
-     * Retrieve an attribute for a given character
+     * Retrieve an attribute for a given character. If it doesn't exist, create one. Roll20 doesn't initiate the attribute until it's edited, so this is helpful for our hidden fields
      * @param {*} character 
      * @param {*} attribute 
+     * @param {*} defaultVal
      * @returns The Attribute value
      */
-    var getAttrVal = function(character, attr){
-        return findObjs({type: 'attribute', characterid: character.id, name: attr})[0];
+    var getAttr = function(character, attr, defaultVal='', defaultHasMax=false){
+        let obj = findObjs({type: 'attribute', characterid: character.id, name: attr})[0];
+
+        //Create attribute if it doesnt exist
+        if (!obj){
+            let props = {
+                name: attr,
+                current: defaultVal,
+                characterid: character.id
+            };
+
+            if (defaultHasMax){
+                props['max'] = defaultVal;
+            }
+
+            obj = createObj("attribute", props);
+            log(obj);}
+
+        return obj;
+    };
+
+    var id = "ability";
+    var list = [
+    	{
+    		name: "",
+    		label: "",
+    		description: "",
+    		"default": true
+    	},
+    	{
+    		name: "cheerleader",
+    		label: "Cheerleader",
+    		description: "<strong>Action:</strong> Give all players within 5 spaces 1 bonus roll this turn."
+    	},
+    	{
+    		name: "brawler",
+    		label: "Brawler",
+    		description: "Add two free bonus dice to any melee attack."
+    	},
+    	{
+    		name: "builder",
+    		label: "Builder",
+    		description: "Roll a D10 on barricade rolls. Add 1 additional bonus dice."
+    	},
+    	{
+    		name: "doctor",
+    		label: "Doctor",
+    		description: "Roll a D10 on first aid rolls. Add 1 additional bonus dice"
+    	},
+    	{
+    		name: "gearhead",
+    		label: "Gearhead",
+    		description: "Start the game with 1 additional weapon, equipment, and inventory slot."
+    	},
+    	{
+    		name: "martial",
+    		label: "Martial Artist",
+    		description: " Start the game with bonus 3 defense."
+    	},
+    	{
+    		name: "scavenger",
+    		label: "Scavenger",
+    		description: "Draw 2 cards instead when you scavenge."
+    	},
+    	{
+    		name: "scout",
+    		label: "Scout",
+    		description: "<strong>Action</strong> Determine amount of enemies on other side of door."
+    	},
+    	{
+    		name: "sniper",
+    		label: "Sniper",
+    		description: "Add two free bonus dice to any ranged attacks."
+    	},
+    	{
+    		name: "speedy",
+    		label: "speedy",
+    		description: "Move additional 2 spaces during a move action."
+    	},
+    	{
+    		name: "sturdy",
+    		label: "sturdy",
+    		description: "Increase your starting health or your starting energy by 20."
+    	}
+    ];
+    var abilities = {
+    	id: id,
+    	list: list
+    };
+
+    const fields$1 = {
+        name: {
+            id: "name"
+        },
+        ammo: {
+            id: "ammo",
+            types: [
+                "d4",
+                "d6",
+                "d8",
+                "d10",
+                "d12",
+                "d20"
+            ]
+        },
+        stats: {
+            health: {
+                id: "health",
+                default: 30,
+            },
+            energy: {
+                id: "energy",
+                default: 40,
+            },
+        },
+        defense: {
+            id: "defense",
+            default: 5,
+            bonus: "defense_bonus"
+        },
+        ability: {
+            options: abilities
+        },
+        slots: {
+            weaponslots: {
+                id: "weaponslots",
+                default: 1,
+                max: 4,
+                prefix: "weapon",
+                label: "Weapons"
+            },
+            equipmentslots: {
+                id: "equipmentslots",
+                default: 2,
+                max: 5,
+                prefix: "equipment",
+                label: "Equipment"
+            },
+            inventoryslots: {
+                id: "inventoryslots",
+                default: 5,
+                max: 10,
+                prefix: "inventory",
+                label: "Inventory"
+            }
+        }
+    };
+
+    const ammotypes = fields$1.ammo.types.map(x=> fields$1.ammo.id + '_' + x);
+
+    var fields = {
+        name: {
+            id: 'itemname'
+        },
+        type: {
+            id: 'itemtype',
+            label: "Item Type",
+            options: [
+                'inventory',
+                'weapon',
+                'equipment'
+            ]
+        },
+        damage: {
+            id: 'itemdamage'
+        },
+        weapontype: {
+            id: 'weapontype',
+            options: [
+                'melee',
+                'ranged'
+            ],
+            label: 'Weapon Type'
+        },
+        uses: {
+            id: 'uses',
+            max: true,
+            labels: {
+                melee: 'Durability',
+                ranged: 'Ammo'
+            }
+        },
+        ammotype: {
+            id: 'ammotype',
+            options: ammotypes,
+            label: 'Ammo Type'
+        },
+        description: {
+            id: 'description'
+        }, 
+        flavor: {
+            id: 'flavor'
+        },
+        actions: {
+            drop:'dropItem', 
+            delete:'deleteItem',
+            attack:'attackWeapon',
+            reload: 'reloadWeapon',
+            equip: 'equipItem',
+            unequip: 'unequipItem'
+        }
     };
 
     function handleReload(character, weaponId){
@@ -157,40 +357,32 @@
             return `weapon_${id}_${num}`;
         };    
 
-        const itemType = getAttrVal(character, getAttrName("itemtype", weaponId)),
-            weaponType = getAttrVal(character, getAttrName("weapontype", weaponId)),
-            ammoType = getAttrVal(character, getAttrName("ammotype", weaponId)),
-            ammo = getAttrVal(character, getAttrName("uses", weaponId)),
-            active = getAttrVal(character, 'weapon' + '_' + weaponId);
+        if (!Number.isInteger(weaponId) ||  weaponId < 1 || weaponId > fields$1.slots.weaponslots.max){
+            return  {msg: `Error! Invalid weapon slot!`, type: "error"};
+        }
 
-            log(active);
-            
-            if (!active){
-                return {msg: "Error! Could not check item active!", type: "error"};
-            } else if (!itemType){
-                return {msg: "Error! Could not get item type!", type: "error"};
-            } else if (!weaponType){
-                return {msg: "Error! Could not get weapontype!", type: "error"};
-            } else if (!ammoType){
-                return {msg: "Error! Could not get ammotype!", type: "error"};
-            } else if (!ammo){
-                return  {msg: "Error! Could not get ammo!", type: "error"};
-            } else if (itemType.get('current') !== 'weapon'){
-                return {msg: "Error! Item is not a weapon!", type: "error"};
-            } else if (weaponType.get('current') !== 'ranged'){
-                return {msg: "Error! Item is not a ranged weapon!", type: "error"};
-            }
-            
-            const ammoMax = ammo.get("max"),
-                ammoStore = getAttrVal(character, ammoType.get('current')), //ammoType dropdown values are the attribute for the appropriate ammo store.
-                isActive = active.get('current');
-        
+        const weaponSlots = getAttr(character, fields$1.slots.weaponslots, fields$1.slots.weaponslots.default);
+
+        if (weaponId > weaponSlots.get('current')){
+            return  {msg: `Error! You do not have that weapon slot available!`, type: "error"};
+        }
+
+
+        const itemType = getAttr(character, getAttrName(fields.type.id, weaponId), fields.type.options[1]),
+            weaponType = getAttr(character, getAttrName(fields.weapontype.id, weaponId), fields.weapontype.options[0]),
+            ammoType = getAttr(character, getAttrName(fields.ammotype.id, weaponId), fields.ammotype.options[0]),
+            ammo = getAttr(character, getAttrName(fields.uses.id, weaponId), 0, true),
+            active = getAttr(character, fields$1.slots.weaponslots.prefix + '_' + weaponId, 0),
+            ammoMax = ammo.get("max"),
+            ammoStore = getAttr(character, ammoType.get('current'), 0), //ammoType dropdown values are the attribute for the appropriate ammo store.
+            isActive = active.get('current');
+
         if (!isActive){
-            return  {msg: `Weapon ${weaponId} is not active!`, type: "warning"};
-        } else if (!ammoMax){
-            return  {msg: "Error! Could not get max ammo!", type: "error"};
-        } else if (!ammoStore){
-            return  {msg: "Error! Could not get ammo store!", type: "error"};
+            return  {msg: `Error! Weapon Slot ${weaponId} is not active!`, type: "error"};
+        } else if (itemType.get('current') !== 'weapon'){
+            return {msg: "Error! Item is not a weapon!", type: "error"};
+        } else if (weaponType.get('current') !== 'ranged'){
+            return {msg: "Error! Item is not a ranged weapon!", type: "error"};
         }
         
         const current = parseInt(ammo.get('current'), 10) || 0,

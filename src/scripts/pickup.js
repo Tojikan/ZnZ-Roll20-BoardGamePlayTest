@@ -1,4 +1,4 @@
-import { getAttrVal } from "./_helpers";
+import { getAttr } from "./_helpers";
 import { fields } from '../model/card';
 import * as templates from '../model/items.json';
 
@@ -23,7 +23,7 @@ export function pickup(char, args){
 
 
     for (let key in item){
-        
+
 
     }
 
@@ -36,7 +36,7 @@ export function pickup(char, args){
 function findOpenInventorySlot(char){
     const maxSlots = (([[data.character.slots.inventoryslots.max]]));
     for (let i = 1; i <= maxSlots; i++){
-        let attr = getAttrVal(char, invPrefix + "_" + i);
+        let attr = getAttr(char, invPrefix + "_" + i);
 
         if (!attr){ //If undefined - means it hasn't been used yet so it's open
             return i;

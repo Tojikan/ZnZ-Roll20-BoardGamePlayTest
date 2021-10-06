@@ -387,6 +387,9 @@ textarea.sheet-shy {
 .sheet-ability .sheet-ability-text {
   width: 55%; }
 
+.sheet-active, .sheet-card-type {
+  display: block !important; }
+
 .sheet-card select {
   height: 2rem;
   padding: 0;

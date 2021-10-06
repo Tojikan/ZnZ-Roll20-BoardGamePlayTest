@@ -1,44 +1,38 @@
-import { getAttrVal } from "./_helpers"; 
+import { getAttr } from "./_helpers"; 
+import { fields as card} from "../model/card";
+import { fields as charFields} from "../model/character";
 
 export function handleReload(character, weaponId){
     const getAttrName = function(id, num){
         return `weapon_${id}_${num}`;
     }    
 
-    const itemType = getAttrVal(character, getAttrName("(([[data.card.type.id]]))", weaponId)),
-        weaponType = getAttrVal(character, getAttrName("(([[data.card.weapontype.id]]))", weaponId)),
-        ammoType = getAttrVal(character, getAttrName("(([[data.card.ammotype.id]]))", weaponId)),
-        ammo = getAttrVal(character, getAttrName("(([[data.card.uses.id]]))", weaponId)),
-        active = getAttrVal(character, '(([[data.character.slots.weaponslots.prefix]]))' + '_' + weaponId);
+    if (!Number.isInteger(weaponId) ||  weaponId < 1 || weaponId > charFields.slots.weaponslots.max){
+        return  {msg: `Error! Invalid weapon slot!`, type: "error"};
+    }
 
-        log(active);
-        
-        if (!active){
-            return {msg: "Error! Could not check item active!", type: "error"};
-        } else if (!itemType){
-            return {msg: "Error! Could not get item type!", type: "error"};
-        } else if (!weaponType){
-            return {msg: "Error! Could not get weapontype!", type: "error"};
-        } else if (!ammoType){
-            return {msg: "Error! Could not get ammotype!", type: "error"};
-        } else if (!ammo){
-            return  {msg: "Error! Could not get ammo!", type: "error"};
-        } else if (itemType.get('current') !== 'weapon'){
-            return {msg: "Error! Item is not a weapon!", type: "error"};
-        } else if (weaponType.get('current') !== 'ranged'){
-            return {msg: "Error! Item is not a ranged weapon!", type: "error"};
-        }
-        
-        const ammoMax = ammo.get("max"),
-            ammoStore = getAttrVal(character, ammoType.get('current')), //ammoType dropdown values are the attribute for the appropriate ammo store.
-            isActive = active.get('current');
-    
+    const weaponSlots = getAttr(character, charFields.slots.weaponslots, charFields.slots.weaponslots.default);
+
+    if (weaponId > weaponSlots.get('current')){
+        return  {msg: `Error! You do not have that weapon slot available!`, type: "error"};
+    }
+
+
+    const itemType = getAttr(character, getAttrName(card.type.id, weaponId), card.type.options[1]),
+        weaponType = getAttr(character, getAttrName(card.weapontype.id, weaponId), card.weapontype.options[0]),
+        ammoType = getAttr(character, getAttrName(card.ammotype.id, weaponId), card.ammotype.options[0]),
+        ammo = getAttr(character, getAttrName(card.uses.id, weaponId), 0, true),
+        active = getAttr(character, charFields.slots.weaponslots.prefix + '_' + weaponId, 0),
+        ammoMax = ammo.get("max"),
+        ammoStore = getAttr(character, ammoType.get('current'), 0), //ammoType dropdown values are the attribute for the appropriate ammo store.
+        isActive = active.get('current');
+
     if (!isActive){
-        return  {msg: `Weapon ${weaponId} is not active!`, type: "warning"};
-    } else if (!ammoMax){
-        return  {msg: "Error! Could not get max ammo!", type: "error"};
-    } else if (!ammoStore){
-        return  {msg: "Error! Could not get ammo store!", type: "error"};
+        return  {msg: `Error! Weapon Slot ${weaponId} is not active!`, type: "error"};
+    } else if (itemType.get('current') !== 'weapon'){
+        return {msg: "Error! Item is not a weapon!", type: "error"};
+    } else if (weaponType.get('current') !== 'ranged'){
+        return {msg: "Error! Item is not a ranged weapon!", type: "error"};
     }
     
     const current = parseInt(ammo.get('current'), 10) || 0,

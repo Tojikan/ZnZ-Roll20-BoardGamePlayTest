@@ -91,13 +91,31 @@ export function getCharacter(sender, msg, args = {}){
 }
 
 /**
- * Retrieve an attribute for a given character
+ * Retrieve an attribute for a given character. If it doesn't exist, create one. Roll20 doesn't initiate the attribute until it's edited, so this is helpful for our hidden fields
  * @param {*} character 
  * @param {*} attribute 
+ * @param {*} defaultVal
  * @returns The Attribute value
  */
-export var getAttrVal = function(character, attr){
-    return findObjs({type: 'attribute', characterid: character.id, name: attr})[0];
+export var getAttr = function(character, attr, defaultVal='', defaultHasMax=false){
+    let obj = findObjs({type: 'attribute', characterid: character.id, name: attr})[0];
+
+    //Create attribute if it doesnt exist
+    if (!obj){
+        let props = {
+            name: attr,
+            current: defaultVal,
+            characterid: character.id
+        };
+
+        if (defaultHasMax){
+            props['max'] = defaultVal;
+        }
+
+        obj = createObj("attribute", props);
+        log(obj);}
+
+    return obj;
 }
 
 
