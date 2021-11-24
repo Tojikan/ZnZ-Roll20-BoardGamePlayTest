@@ -1,5 +1,7 @@
 # Roll20 Static Sheet Generator #
 
+** Archived as this was merged back into the main Roll20 branch. **
+
 This is a custom build process to generate a custom Character Sheet in Roll20 and streamline the whole process of building character sheets. In this process, we define our sheet fields in a separate data source, put it through a templating engine to generate the final markup, and then build our styles using modern CSS pre-processing.
 
 This may be difficult if you do not come from a developer background as you will need to understand the following concepts:
